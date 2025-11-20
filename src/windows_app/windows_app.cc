@@ -140,7 +140,7 @@ void Window::CopyCPUBuffer(const void* external_memory, uint32_t external_width,
   bmi.bmiHeader.biHeight = -static_cast<LONG>(external_height);
 
   if (!StretchDIBits(front_dc_, 0, 0, client_width_, client_height_, 0, 0,
-                     external_width, external_height, external_memory, &bmi_,
+                     external_width, external_height, external_memory, &bmi,
                      DIB_RGB_COLORS, SRCCOPY)) {
     MessageBoxW(nullptr, L"StretchDIBits failed.", L"Error", MB_ICONERROR);
   }
@@ -308,3 +308,4 @@ int WindowsApp::prev_mouse_y = 0;
 int WindowsApp::curr_mouse_x = 0;
 int WindowsApp::curr_mouse_y = 0;
 short WindowsApp::wheel_delta = 0;
+
