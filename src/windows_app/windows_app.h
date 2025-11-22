@@ -186,9 +186,12 @@ class Window {
  public:
   Window(HINSTANCE hOwner, const std::wstring& name, uint32_t width,
          uint32_t height, WNDPROC msg_handler);
+  Window(const Window&) = delete;
+  Window& operator=(const Window&) = delete;
 
   ~Window();
 
+  HWND handle() const;
   const std::wstring& name() const;
   uint32_t width() const;
   uint32_t height() const;
@@ -203,6 +206,8 @@ class Window {
   void SwapCPUBuffer(uint32_t index);
 
   void PrintText(const std::wstring& text, uint32_t x, uint32_t y);
+
+  void PrintTextInTitle(const std::wstring& text);
 
  private:
   static const uint32_t MAX_BACK_BUFFER_COUNT = 2;
@@ -235,15 +240,9 @@ class WindowsApp {
 
   virtual ~WindowsApp() = default;
 
-  bool IsRunning() const;
-
-  double GetElapsedTime() const;
-
-  double GetDeltaTime();
-
   virtual void Initialize() = 0;
 
-  void Run();
+  virtual void Run() = 0;
 
   virtual void Quit() = 0;
 
@@ -257,8 +256,6 @@ class WindowsApp {
   static short wheel_delta;
 
  protected:
-  virtual void MainLoop() = 0;
-
   void HandleMessages(MSG& Message);
 
   static LRESULT CALLBACK DefaultWndProc(HWND hWnd, UINT iMessage,
@@ -266,8 +263,5 @@ class WindowsApp {
 
   HINSTANCE hInstance_;
   std::list<std::unique_ptr<Window>> windows_;
-  LARGE_INTEGER frequency_;
-  LARGE_INTEGER start_time_;
-  mutable LARGE_INTEGER last_time_{};
   bool is_running_;
 };

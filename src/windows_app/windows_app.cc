@@ -75,6 +75,7 @@ Window::~Window() {
     DeleteObject(back_buffers_[i].bitmap);
     DeleteDC(back_buffers_[i].dc);
   }
+  ReleaseDC(handle_, front_dc_);
 }
 
 HWND Window::handle() const { return handle_; }
@@ -168,38 +169,13 @@ void Window::PrintText(const std::wstring& text, uint32_t x, uint32_t y) {
   }
 }
 
+void Window::PrintTextInTitle(const std::wstring& text) {
+  std::wstring title = name_ + L" | " + text;
+  SetWindowTextW(handle_, title.c_str());
+}
+
 WindowsApp::WindowsApp(HINSTANCE hInstance)
-    : hInstance_(hInstance), is_running_(true) {
-  QueryPerformanceFrequency(&frequency_);
-  QueryPerformanceCounter(&start_time_);
-}
-
-bool WindowsApp::IsRunning() const { return is_running_; }
-
-double WindowsApp::GetElapsedTime() const {
-  LARGE_INTEGER now;
-  QueryPerformanceCounter(&now);
-  return static_cast<double>(now.QuadPart - start_time_.QuadPart) /
-         frequency_.QuadPart;
-}
-
-double WindowsApp::GetDeltaTime() {
-  LARGE_INTEGER now;
-  QueryPerformanceCounter(&now);
-  double delta = static_cast<double>(now.QuadPart - last_time_.QuadPart) /
-                 frequency_.QuadPart;
-  last_time_ = now;
-  return delta;
-}
-
-void WindowsApp::Run() {
-  while (is_running_) {
-    MSG msg{};
-    HandleMessages(msg);
-    MainLoop();
-  }
-  windows_.clear();
-}
+    : hInstance_(hInstance), is_running_(true) {}
 
 void WindowsApp::CreateDebugConsole() {
   AllocConsole();
@@ -226,11 +202,11 @@ LRESULT CALLBACK WindowsApp::DefaultWndProc(HWND hWnd, UINT iMessage,
                                             WPARAM wParam, LPARAM lParam) {
   switch (iMessage) {
     case WM_KEYDOWN:
-      input_states[wParam] = true;
+      if (wParam < 0xFF) input_states[wParam] = true;
       return 0;
 
     case WM_KEYUP:
-      input_states[wParam] = false;
+      if (wParam < 0xFF) input_states[wParam] = false;
       return 0;
 
     case WM_LBUTTONDOWN:
