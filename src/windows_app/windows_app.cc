@@ -5,8 +5,6 @@
 
 #include <cstdint>
 
-#include "windows_key_fallback.h"
-
 Window::Window(HINSTANCE hOwner, const std::wstring& name, uint32_t width,
                uint32_t height, WNDPROC msg_handler)
     : name_(name),
@@ -174,8 +172,7 @@ void Window::PrintTextInTitle(const std::wstring& text) {
   SetWindowTextW(handle_, title.c_str());
 }
 
-WindowsApp::WindowsApp(HINSTANCE hInstance)
-    : hInstance_(hInstance), is_running_(true) {}
+WindowsApp::WindowsApp(HINSTANCE hInstance) : hInstance_(hInstance), msg({0}) {}
 
 void WindowsApp::CreateDebugConsole() {
   AllocConsole();
@@ -189,86 +186,64 @@ void WindowsApp::CreateDebugConsole() {
 
 void WindowsApp::HandleMessages(MSG& Message) {
   while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
-    if (Message.message == WM_QUIT) {
-      is_running_ = false;
-      break;
-    }
     TranslateMessage(&Message);
     DispatchMessage(&Message);
   }
 }
 
-LRESULT CALLBACK WindowsApp::DefaultWndProc(HWND hWnd, UINT iMessage,
-                                            WPARAM wParam, LPARAM lParam) {
+LRESULT WindowsApp::WndProc(HWND hWnd, UINT iMessage, WPARAM wParam,
+                            LPARAM lParam) {
   switch (iMessage) {
     case WM_KEYDOWN:
-      if (wParam < 0xFF) input_states[wParam] = true;
+      OnKEYDOWN(wParam, lParam);
       return 0;
 
     case WM_KEYUP:
-      if (wParam < 0xFF) input_states[wParam] = false;
+      OnKEYUP(wParam, lParam);
       return 0;
 
     case WM_LBUTTONDOWN:
-      input_states[WINDOWS_KEY_LBUTTON] = true;
-      return 0;
-    case WM_LBUTTONUP:
-      input_states[WINDOWS_KEY_LBUTTON] = false;
-      return 0;
-
     case WM_RBUTTONDOWN:
-      input_states[WINDOWS_KEY_RBUTTON] = true;
-      return 0;
-    case WM_RBUTTONUP:
-      input_states[WINDOWS_KEY_RBUTTON] = false;
-      return 0;
-
     case WM_MBUTTONDOWN:
-      input_states[WINDOWS_KEY_MBUTTON] = true;
+    case WM_XBUTTONDOWN:
+      OnMOUSEDOWN(wParam, lParam);
       return 0;
+
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
     case WM_MBUTTONUP:
-      input_states[WINDOWS_KEY_MBUTTON] = false;
+    case WM_XBUTTONUP:
+      OnMOUSEUP(wParam, lParam);
       return 0;
 
-    case WM_XBUTTONDOWN: {
-      WORD btn = GET_XBUTTON_WPARAM(wParam);
-      if (btn == XBUTTON1) input_states[WINDOWS_KEY_XBUTTON1] = true;
-      if (btn == XBUTTON2) input_states[WINDOWS_KEY_XBUTTON2] = true;
+    case WM_MOUSEMOVE:
+      OnMOUSEMOVE(wParam, lParam);
       return 0;
-    }
-    case WM_XBUTTONUP: {
-      WORD btn = GET_XBUTTON_WPARAM(wParam);
-      if (btn == XBUTTON1) input_states[WINDOWS_KEY_XBUTTON1] = false;
-      if (btn == XBUTTON2) input_states[WINDOWS_KEY_XBUTTON2] = false;
-      return 0;
-    }
 
-    case WM_MOUSEMOVE: {
-      prev_mouse_x = curr_mouse_x;
-      prev_mouse_y = curr_mouse_y;
-      curr_mouse_x = GET_X_LPARAM(lParam);
-      curr_mouse_y = GET_Y_LPARAM(lParam);
+    case WM_MOUSEWHEEL:
+      OnMOUSEWHEEL(wParam, lParam);
       return 0;
-    }
 
-    case WM_MOUSEWHEEL: {
-      wheel_delta += GET_WHEEL_DELTA_WPARAM(wParam);
+    case WM_ACTIVATE:
+      if (LOWORD(wParam) == WA_INACTIVE) {
+        OnINACTIVE(wParam, lParam);
+      } else {
+        OnACTIVE(wParam, lParam);
+      }
       return 0;
-    }
 
     case WM_SETFOCUS:
+      OnSETFOCUS(wParam, lParam);
       return 0;
     case WM_KILLFOCUS:
-      for (auto& state : input_states) state = false;
-      prev_mouse_x = 0;
-      prev_mouse_y = 0;
-      curr_mouse_x = 0;
-      curr_mouse_y = 0;
-      wheel_delta = 0;
+      OnKILLFOCUS(wParam, lParam);
       return 0;
 
-    case WM_CLOSE:
-      PostQuitMessage(0);
+    case WM_ENTERSIZEMOVE:
+      OnENTERSIZEMOVE(wParam, lParam);
+      return 0;
+    case WM_EXITSIZEMOVE:
+      OnEXITSIZEMOVE(wParam, lParam);
       return 0;
 
     case WM_DESTROY:
@@ -278,10 +253,3 @@ LRESULT CALLBACK WindowsApp::DefaultWndProc(HWND hWnd, UINT iMessage,
 
   return DefWindowProc(hWnd, iMessage, wParam, lParam);
 }
-
-std::array<bool, 0xFF> WindowsApp::input_states;
-int WindowsApp::prev_mouse_x = 0;
-int WindowsApp::prev_mouse_y = 0;
-int WindowsApp::curr_mouse_x = 0;
-int WindowsApp::curr_mouse_y = 0;
-short WindowsApp::wheel_delta = 0;
