@@ -3,7 +3,9 @@
 #include <commctrl.h>
 #include <windowsx.h>
 
+#include <cassert>
 #include <cstdint>
+
 
 Window::Window(HINSTANCE hOwner, const std::wstring& name, uint32_t width,
                uint32_t height, WNDPROC msg_handler)
@@ -172,7 +174,7 @@ void Window::PrintTextInTitle(const std::wstring& text) {
   SetWindowTextW(handle_, title.c_str());
 }
 
-WindowsApp::WindowsApp(HINSTANCE hInstance) : hInstance_(hInstance), msg({0}) {}
+WindowsApp::WindowsApp(HINSTANCE hInstance) : hInstance_(hInstance) {}
 
 void WindowsApp::CreateDebugConsole() {
   AllocConsole();
@@ -191,7 +193,7 @@ void WindowsApp::HandleMessages(MSG& Message) {
   }
 }
 
-LRESULT WindowsApp::WndProc(HWND hWnd, UINT iMessage, WPARAM wParam,
+LRESULT WindowsApp::MsgHandler(HWND hWnd, UINT iMessage, WPARAM wParam,
                             LPARAM lParam) {
   switch (iMessage) {
     case WM_KEYDOWN:

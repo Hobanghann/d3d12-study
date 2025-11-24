@@ -13,8 +13,10 @@
 
 #include "windows_key.h"
 
-class Window {
- public:
+class Window { 
+  friend class WindowsApp;
+
+ private:
   Window(HINSTANCE hOwner, const std::wstring& name, uint32_t width,
          uint32_t height, WNDPROC msg_handler);
   Window(const Window&) = delete;
@@ -40,7 +42,7 @@ class Window {
 
   void PrintTextInTitle(const std::wstring& text);
 
- private:
+
   static const uint32_t MAX_BACK_BUFFER_COUNT = 2;
 
   HWND handle_;
@@ -64,13 +66,6 @@ class Window {
 
 class WindowsApp {
  public:
-  WindowsApp() = delete;
-  WindowsApp(const WindowsApp&) = delete;
-  WindowsApp(HINSTANCE hInstance);
-  WindowsApp& operator=(const WindowsApp&) = delete;
-
-  virtual ~WindowsApp() = default;
-
   virtual void Initialize() = 0;
 
   virtual void Run() = 0;
@@ -80,6 +75,12 @@ class WindowsApp {
   void CreateDebugConsole();
 
  protected:
+  WindowsApp() = delete;
+  WindowsApp(const WindowsApp&) = delete;
+  WindowsApp(HINSTANCE hInstance);
+  WindowsApp& operator=(const WindowsApp&) = delete;
+  virtual ~WindowsApp() = default;
+
   void HandleMessages(MSG& Message);
 
   virtual void OnKEYDOWN(WPARAM wParam, LPARAM lParam) = 0;
@@ -95,10 +96,9 @@ class WindowsApp {
   virtual void OnACTIVE(WPARAM wParam, LPARAM lParam) = 0;
   virtual void OnINACTIVE(WPARAM wParam, LPARAM lParam) = 0;
 
-  virtual LRESULT WndProc(HWND hWnd, UINT iMessage, WPARAM wParam,
+  LRESULT MsgHandler(HWND hWnd, UINT iMessage, WPARAM wParam,
                           LPARAM lParam);
 
   HINSTANCE hInstance_;
   std::list<std::unique_ptr<Window>> windows_;
-  MSG msg;
 };
