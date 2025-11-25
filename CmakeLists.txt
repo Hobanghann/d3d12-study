@@ -1,0 +1,63 @@
+cmake_minimum_required(VERSION 3.4)
+
+set(PROJECT_NAME D3D12_demo)
+
+project(${PROJECT_NAME} LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(NOT WIN32)
+	message(FATAL_ERROR "This project only supports windows environment currently.")
+endif()
+
+if(NOT MSVC)
+	message(FATAL_ERROR "This project only supports MSVC project currently.")
+endif()
+
+set(PLATFORM_DEFINITION PLATFORM_GENERIC)
+set(PLATFORM_FOLDER Generic)
+
+option(TARGET_WINDOWS "Windows Option" ON)
+
+if(TARGET_WINDOWS)
+	set(PLATFORM_DEFINITION PLATFORM_WINDOWS)
+	set(PLATFORM_FOLDER Windows)
+endif()
+
+file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/*.cc)
+file(GLOB_RECURSE HEADERS ${CMAKE_SOURCE_DIR}/*.h)
+
+set(ALL_FILES ${SOURCES} ${HEADERS})
+
+foreach(FILE ${ALL_FILES})
+    # make rel path
+	file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}" "${FILE}")
+	set(ALL_FILES_REL ${ALL_FILES_REL} ${REL_PATH})
+endforeach()	
+
+foreach(FILE ${ALL_FILES_REL})
+    # get the base path
+    get_filename_component(BASE_PATH "${FILE}" PATH)
+
+    # changes /'s to \\'s
+    string(REPLACE "/" "\\" GROUP "${BASE_PATH}")
+
+    source_group("${GROUP}" FILES "${FILE}")
+endforeach()
+
+add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+
+target_include_directories(${PROJECT_NAME}
+PUBLIC
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}
+	)
+
+target_link_libraries(${PROJECT_NAME}
+    d3d12
+    dxgi
+    dxguid
+)
